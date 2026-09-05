@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家聊 · 家庭聊天 — 免服务器 · 后台也能收消息的家庭通讯软件</title>
+<meta name="description" content="家聊（家庭聊天）是一款免服务器、零成本、后台也能收消息的家庭通讯软件。基于公共 ntfy 中继，不要求双方同时在线，安卓 APK 自包含、网页版即开即用。">
+<meta name="theme-color" content="#0ea5a4">
+<meta property="og:title" content="家聊 · 家庭聊天">
+<meta property="og:description" content="免服务器 · 零成本 · 后台也能收消息的家庭通讯软件">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2334d399'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='48' height='48' rx='14' fill='url(%23g)'/%3E%3Cpath d='M22 26h20v12H30l-6 6v-6h-2z' fill='white'/%3E%3C/svg%3E">
+<style>
+:root{
+  --ink:#0f172a;
+  --ink-soft:#334155;
+  --ink-faint:#64748b;
+  --emerald:#10b981;
+  --teal:#0ea5a4;
+  --cyan:#22d3ee;
+  --violet:#a78bfa;
+  --glass:rgba(255,255,255,.55);
+  --glass-strong:rgba(255,255,255,.72);
+  --glass-border:rgba(255,255,255,.65);
+  --glass-shadow:0 8px 32px rgba(15,23,42,.12), inset 0 1px 0 rgba(255,255,255,.7);
+  --radius:24px;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font);
+  color:var(--ink);
+  line-height:1.65;
+  min-height:100vh;
+  overflow-x:hidden;
+  background:#eaf6f3;
+  position:relative;
+}
+/* ---------- animated liquid background ---------- */
+.bg{position:fixed;inset:0;z-index:-2;overflow:hidden;background:
+  radial-gradient(120% 120% at 10% 0%,#d8f5ec 0%,#e6f3ff 45%,#f1e9ff 100%);}
+.orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.55;mix-blend-mode:multiply;animation:float 22s ease-in-out infinite}
+.orb.a{width:46vw;height:46vw;left:-8vw;top:-10vw;background:radial-gradient(circle,#5eead4,transparent 70%)}
+.orb.b{width:40vw;height:40vw;right:-6vw;top:8vw;background:radial-gradient(circle,#a5b4fc,transparent 70%);animation-delay:-6s}
+.orb.c{width:38vw;height:38vw;left:18vw;bottom:-12vw;background:radial-gradient(circle,#7dd3fc,transparent 70%);animation-delay:-12s}
+.orb.d{width:30vw;height:30vw;right:14vw;bottom:4vw;background:radial-gradient(circle,#6ee7b7,transparent 70%);animation-delay:-3s}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(4vw,3vw) scale(1.08)}66%{transform:translate(-3vw,2vw) scale(.96)}}
+.bg::after{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 0%,rgba(255,255,255,.5),transparent 70%);z-index:1}
+/* ---------- glass primitive ---------- */
+.glass{
+  background:var(--glass);
+  backdrop-filter:blur(22px) saturate(160%);
+  -webkit-backdrop-filter:blur(22px) saturate(160%);
+  border:1px solid var(--glass-border);
+  box-shadow:var(--glass-shadow);
+  border-radius:var(--radius);
+}
+/* ---------- navbar ---------- */
+.nav{position:sticky;top:14px;z-index:50;margin:14px auto 0;max-width:1140px;left:0;right:0;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 10px 18px;border-radius:20px;width:calc(100% - 28px)}
+.nav .brand{display:flex;align-items:center;gap:11px;font-weight:700;font-size:18px;letter-spacing:.5px}
+.nav .brand img{width:34px;height:34px;border-radius:10px;box-shadow:0 4px 14px rgba(16,185,129,.35)}
+.nav .links{display:flex;gap:6px;align-items:center}
+.nav .links a{color:var(--ink-soft);text-decoration:none;font-size:14.5px;padding:8px 13px;border-radius:12px;transition:.2s}
+.nav .links a:hover{background:rgba(255,255,255,.6);color:var(--ink)}
+.btn{display:inline-flex;align-items:center;gap:9px;font-family:var(--font);font-weight:600;cursor:pointer;
+  border:none;border-radius:14px;padding:12px 20px;font-size:15px;text-decoration:none;transition:transform .2s,box-shadow .2s}
+.btn-primary{background:linear-gradient(135deg,var(--emerald),var(--teal));color:#fff;
+  box-shadow:0 10px 24px rgba(16,185,129,.35),inset 0 1px 0 rgba(255,255,255,.4)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(16,185,129,.45)}
+.btn-glass{background:var(--glass-strong);color:var(--ink);border:1px solid var(--glass-border);
+  box-shadow:0 8px 22px rgba(15,23,42,.1),inset 0 1px 0 rgba(255,255,255,.7)}
+.btn-glass:hover{transform:translateY(-2px)}
+/* ---------- layout ---------- */
+.wrap{max-width:1140px;margin:0 auto;padding:0 20px}
+section{position:relative;z-index:1}
+/* ---------- hero ---------- */
+.hero{padding:64px 0 40px}
+.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--teal);
+  padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.6);border:1px solid var(--glass-border);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);margin-bottom:22px}
+.pill .dot{width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 0 4px rgba(16,185,129,.25);animation:pulse 2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+h1{font-size:54px;line-height:1.1;font-weight:800;letter-spacing:-1px;
+  background:linear-gradient(120deg,#0f172a 30%,#0e7490 70%,#10b981);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:18px}
+.hero p.lead{font-size:18px;color:var(--ink-soft);max-width:480px;margin-bottom:30px}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:18px}
+.badges{display:flex;gap:18px;flex-wrap:wrap;color:var(--ink-faint);font-size:13.5px;margin-top:6px}
+.badges span{display:inline-flex;align-items:center;gap:6px}
+/* phone mockup */
+.phone-stage{display:flex;justify-content:center;perspective:1200px}
+.phone{width:300px;height:600px;border-radius:42px;padding:13px;position:relative;
+  background:linear-gradient(160deg,rgba(255,255,255,.85),rgba(255,255,255,.55));
+  backdrop-filter:blur(20px) saturate(160%);-webkit-backdrop-filter:blur(20px) saturate(160%);
+  border:1px solid rgba(255,255,255,.8);
+  box-shadow:0 30px 70px rgba(15,23,42,.25),inset 0 1px 0 rgba(255,255,255,.9);
+  transition:transform .15s ease-out;will-change:transform}
+.phone::before{content:"";position:absolute;top:18px;left:50%;transform:translateX(-50%);width:90px;height:7px;border-radius:4px;background:rgba(15,23,42,.25);z-index:5}
+.screen{width:100%;height:100%;border-radius:30px;overflow:hidden;background:#eef2f6;
+  display:flex;flex-direction:column;position:relative}
+.screen .topbar{height:64px;display:flex;align-items:center;gap:10px;padding:0 16px;
+  background:linear-gradient(135deg,var(--emerald),var(--teal));color:#fff}
+.screen .topbar .av{width:36px;height:36px;border-radius:11px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:18px}
+.screen .topbar .nm{font-weight:700;font-size:16px;line-height:1.1}
+.screen .topbar .st{font-size:11px;opacity:.85}
+.chats{flex:1;padding:16px;display:flex;flex-direction:column;gap:12px;overflow:hidden;background:#eef2f6}
+.bub{max-width:78%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.45}
+.bub.l{align-self:flex-start;background:#fff;border-top-left-radius:5px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.bub.r{align-self:flex-end;background:linear-gradient(135deg,#bbf7d0,#a7f3d0);border-top-right-radius:5px}
+.bub .t{font-size:10px;opacity:.5;margin-bottom:2px}
+.composer{height:58px;display:flex;align-items:center;gap:8px;padding:0 12px;background:#fff;border-top:1px solid #eef2f6}
+.composer .inp{flex:1;height:38px;border-radius:20px;background:#f1f5f9;display:flex;align-items:center;padding:0 14px;color:#94a3b8;font-size:13px}
+.composer .send{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--emerald),var(--teal));display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px}
+.float-note{position:absolute;right:-14px;bottom:90px;display:flex;align-items:center;gap:9px;padding:9px 14px;border-radius:14px;font-size:13px;font-weight:600;
+  background:var(--glass-strong);border:1px solid var(--glass-border);box-shadow:var(--glass-shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  animation:float 6s ease-in-out infinite}
+.float-note .ic{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--emerald),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+/* ---------- section titles ---------- */
+.s-head{text-align:center;max-width:680px;margin:0 auto 48px}
+.s-head .kicker{font-size:14px;font-weight:700;letter-spacing:2px;color:var(--teal);text-transform:uppercase;margin-bottom:10px}
+.s-head h2{font-size:38px;font-weight:800;letter-spacing:-.5px;margin-bottom:12px}
+.s-head p{font-size:16.5px;color:var(--ink-faint)}
+/* ---------- features ---------- */
+.features{padding:40px 0}
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.card{padding:30px 26px;border-radius:22px;position:relative;overflow:hidden;transition:transform .25s,box-shadow .25s}
+.card:hover{transform:translateY(-6px);box-shadow:0 22px 50px rgba(15,23,42,.16),inset 0 1px 0 rgba(255,255,255,.8)}
+.card .ico{width:54px;height:54px;border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:18px;
+  background:linear-gradient(135deg,rgba(16,185,129,.18),rgba(34,211,238,.18));border:1px solid rgba(255,255,255,.7)}
+.card .ico svg{width:28px;height:28px;stroke:var(--teal);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.card h3{font-size:19px;font-weight:700;margin-bottom:9px}
+.card p{font-size:14.5px;color:var(--ink-soft);line-height:1.7}
+/* ---------- steps ---------- */
+.steps{padding:40px 0}
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;counter-reset:s}
+.step{padding:32px 28px;border-radius:22px;position:relative}
+.step .num{width:46px;height:46px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:20px;color:#fff;background:linear-gradient(135deg,var(--emerald),var(--teal));margin-bottom:18px;box-shadow:0 8px 20px rgba(16,185,129,.3)}
+.step h3{font-size:18px;font-weight:700;margin-bottom:8px}
+.step p{font-size:14.5px;color:var(--ink-soft);line-height:1.7}
+/* ---------- privacy strip ---------- */
+.priv{padding:40px 0}
+.priv-card{padding:40px;display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.priv-card h2{font-size:30px;font-weight:800;margin-bottom:14px;letter-spacing:-.5px}
+.priv-card p{font-size:16px;color:var(--ink-soft);margin-bottom:16px}
+.priv-list{list-style:none;display:flex;flex-direction:column;gap:12px}
+.priv-list li{display:flex;gap:11px;align-items:flex-start;font-size:14.5px;color:var(--ink-soft)}
+.priv-list li .ck{flex:none;width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--emerald),var(--teal));color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:2px}
+/* ---------- final cta ---------- */
+.final{padding:50px 0 70px}
+.final-card{padding:56px 40px;text-align:center;border-radius:30px;
+  background:linear-gradient(135deg,rgba(16,185,129,.85),rgba(14,165,164,.82));
+  border:1px solid rgba(255,255,255,.5);box-shadow:0 30px 70px rgba(16,185,129,.3),inset 0 1px 0 rgba(255,255,255,.4);
+  color:#fff;position:relative;overflow:hidden}
+.final-card::before{content:"";position:absolute;inset:0;background:radial-gradient(60% 80% at 80% 10%,rgba(255,255,255,.25),transparent 60%);pointer-events:none}
+.final-card h2{font-size:34px;font-weight:800;margin-bottom:12px}
+.final-card p{font-size:17px;opacity:.92;margin-bottom:28px}
+.final-card .cta-row{justify-content:center}
+.final-card .btn-glass{background:rgba(255,255,255,.92);color:var(--ink)}
+/* ---------- footer ---------- */
+.foot{padding:34px 20px 50px;text-align:center;color:var(--ink-faint);font-size:13.5px;position:relative;z-index:1}
+.foot a{color:var(--teal);text-decoration:none}
+/* reveal */
+.js .reveal{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
+.js .reveal.in{opacity:1;transform:none}
+@media(max-width:920px){
+  .hero-grid{grid-template-columns:1fr;gap:36px}
+  .phone-stage{order:-1}
+  h1{font-size:42px}
+  .fgrid,.sgrid{grid-template-columns:1fr}
+  .priv-card{grid-template-columns:1fr;gap:24px;padding:30px}
+}
+@media(max-width:520px){
+  h1{font-size:34px}
+  .s-head h2{font-size:28px}
+  .nav .links{display:none}
+  .cta-row .btn{flex:1;justify-content:center}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true">
+  <div class="orb a"></div><div class="orb b"></div><div class="orb c"></div><div class="orb d"></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav glass">
+  <div class="brand">
+    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2334d399'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='8' y='8' width='48' height='48' rx='14' fill='url(%23g)'/%3E%3Cpath d='M22 26h20v12H30l-6 6v-6h-2z' fill='white'/%3E%3C/svg%3E" alt="家聊">
+    家聊 · 家庭聊天
+  </div>
+  <div class="links">
+    <a href="#features">功能</a>
+    <a href="#how">怎么用</a>
+    <a href="#privacy">隐私</a>
+    <a class="btn btn-primary" href="#download">⬇ 下载</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero wrap">
+  <div class="hero-grid">
+    <div class="reveal">
+      <span class="pill"><span class="dot"></span> 免服务器 · 零成本 · 后台也能收消息</span>
+      <h1>家庭聊天，<br>从此不断线。</h1>
+      <p class="lead">家聊是一款专给家人用的通讯软件。不用自己搭服务器、不花一分钱，关掉 App 也能收到消息提醒——只要家里人进了同一个房间号，就能随时聊。</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">📱 下载安卓 APK</a>
+        <a class="btn btn-glass" href="https://15816563131.github.io/family-chat-app/" target="_blank" rel="noopener">🌐 打开网页版</a>
+      </div>
+      <div class="badges">
+        <span>✅ 免服务器</span>
+        <span>🔔 后台推送</span>
+        <span>💸 完全免费</span>
+        <span>🔒 无账号体系</span>
+      </div>
+    </div>
+    <div class="phone-stage reveal">
+      <div class="phone" id="phone">
+        <div class="screen">
+          <div class="topbar">
+            <div class="av">👨‍👩‍👧</div>
+            <div>
+              <div class="nm">我们一家人</div>
+              <div class="st">房间号 #home · 3 人在线</div>
+            </div>
+          </div>
+          <div class="chats">
+            <div class="bub l"><div class="t">妈妈 09:12</div>今天晚上吃什么呀？</div>
+            <div class="bub r"><div class="t">我 09:13</div>我做红烧肉吧 🍖</div>
+            <div class="bub l"><div class="t">爸爸 09:15</div>记得买点青菜，别又光吃肉哈哈</div>
+            <div class="bub r"><div class="t">我 09:16</div>收到~ 这就去下单 🛒</div>
+            <div class="bub l"><div class="t">妈妈 09:20</div>乖，早点回来 ❤️</div>
+          </div>
+          <div class="composer">
+            <div class="inp">说点什么…</div>
+            <div class="send">➤</div>
+          </div>
+        </div>
+      </div>
+      <div class="float-note"><span class="ic">🔔</span> 后台收到新消息</div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features wrap" id="features">
+  <div class="s-head reveal">
+    <div class="kicker">为什么是家聊</div>
+    <h2>把"麻烦"都省掉</h2>
+    <p>传统方案要么花钱买服务器，要么用免费服务器却要 15 分钟休眠。家聊用公共中继，从根上绕开了这些。</p>
+  </div>
+  <div class="fgrid">
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M7 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2m-9 0v12m4 0V7"/><path d="M4 7l-1 9a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2l-1-9"/></svg></div>
+      <h3>免服务器</h3>
+      <p>消息走公共 ntfy 中继，你不用买、不用租、不用维护任何一台服务器，零运维。</p>
+    </div>
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></div>
+      <h3>后台也能收</h3>
+      <p>App 退到后台或锁屏，原生服务每 15 秒轮询一次，有消息就弹系统通知，不漏接。</p>
+    </div>
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+      <h3>不要求同时在线</h3>
+      <p>消息会暂存，对方上线后自动补收，不用两个人同时挂着，也不用同一网络。</p>
+    </div>
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="3"/><path d="M11 18h2"/></svg></div>
+      <h3>APK 自包含</h3>
+      <p>安卓安装包内置聊天页面，装好即用，不依赖任何网站也能聊天，离线也能打开。</p>
+    </div>
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg></div>
+      <h3>网页版即开即用</h3>
+      <p>浏览器打开就能聊，可"添加到主屏"当 App 用，电脑、平板都能上。</p>
+    </div>
+    <div class="card glass reveal">
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+      <h3>无账号 · 更省心</h3>
+      <p>不用注册、不用记密码，填个昵称和房间号就能进，老人小孩都能用。</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps wrap" id="how">
+  <div class="s-head reveal">
+    <div class="kicker">三步开始</div>
+    <h2>比发微信还简单</h2>
+    <p>没有注册流程，没有等待审核，打开就能用。</p>
+  </div>
+  <div class="sgrid">
+    <div class="step glass reveal"><div class="num">1</div><h3>起一个房间号</h3><p>想一个只有家人知道的房间号（比如 #home），它就是你们的私密频道入口。</p></div>
+    <div class="step glass reveal"><div class="num">2</div><h3>把号告诉家人</h3><p>把房间号发给爸妈、伴侣、孩子，他们用同一个号进入，立刻出现在同一个聊天里。</p></div>
+    <div class="step glass reveal"><div class="num">3</div><h3>放心去聊</h3><p>关掉 App 也不怕漏消息，后台自动收通知；想用电脑就开网页版，进度同步。</p></div>
+  </div>
+</section>
+
+<!-- PRIVACY -->
+<section class="priv wrap" id="privacy">
+  <div class="priv-card glass reveal">
+    <div>
+      <h2>隐私，先说清楚</h2>
+      <p>家聊的设计目标之一就是"少留痕迹"。它不建账号、不存你的通讯录，消息经由公共中继转发。</p>
+      <p>如果你对隐私要求更高，完全可以自己搭一个 ntfy 服务，把数据完全掌握在自己手里——代码与网页版都已开源托管。</p>
+    </div>
+    <ul class="priv-list">
+      <li><span class="ck">✓</span> 无需手机号、邮箱，零注册</li>
+      <li><span class="ck">✓</span> 不维护中心化服务器，无你的聊天留存</li>
+      <li><span class="ck">✓</span> 中继可自建，数据归你所有</li>
+      <li><span class="ck">✓</span> APK 与网页版全部开源可查</li>
+    </ul>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final wrap" id="download">
+  <div class="final-card reveal">
+    <h2>现在就把家人拉进来</h2>
+    <p>下载安卓 APK，或直接在浏览器打开网页版——选你方便的就好。</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="./family-chat.apk" download>📱 下载安卓 APK（5.4 MB）</a>
+      <a class="btn btn-glass" href="https://15816563131.github.io/family-chat-app/" target="_blank" rel="noopener">🌐 打开网页版</a>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <p>家聊 · 家庭聊天 — 一款免服务器、后台也能收消息的家庭通讯软件。</p>
+  <p>网页版：<a href="https://15816563131.github.io/family-chat-app/" target="_blank" rel="noopener">github.io/family-chat-app</a> ｜ 基于公共 ntfy 中继构建</p>
+</footer>
+
+<script>
+document.body.classList.add('js');
+// reveal on scroll
+const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}})},{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+// subtle 3d tilt on phone
+const phone=document.getElementById('phone');
+const stage=phone?phone.parentElement:null;
+if(phone&&stage){
+  stage.addEventListener('mousemove',e=>{
+    const r=stage.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width-.5, y=(e.clientY-r.top)/r.height-.5;
+    phone.style.transform=`rotateY(${x*10}deg) rotateX(${-y*10}deg)`;
+  });
+  stage.addEventListener('mouseleave',()=>phone.style.transform='');
+}
+</script>
+</body>
+</html>
